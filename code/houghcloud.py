@@ -36,8 +36,8 @@ _vert_classes = {0: 'uc', 1: 'uc', 2: 'hill', 3: 'v_patch', 4: 'v_bush', 5: 'v_t
 
 #------------------------------------------------------------------------------------------
 
-class AarcCloud():
-    def __init__(self, parent:'AarcCloud' = None, las_path: str = None, pt_array:np.ndarray = None,
+class HoughCloud():
+    def __init__(self, parent:'HoughCloud' = None, las_path: str = None, pt_array:np.ndarray = None,
     cld_name: str = None, tree_lvl: int = None, pt_class = None, lidar_density:float = 0.1,
     below_cld_elevation: float = None, cld_lvl: int = None) -> None:
         if parent is None and las_path is None or parent and las_path:
@@ -46,7 +46,7 @@ class AarcCloud():
     
         #-------------child cloud init-----------------------------------------
 
-        if isinstance(parent, AarcCloud) and las_path is None: #sub_cloud goes here
+        if isinstance(parent, HoughCloud) and las_path is None: #sub_cloud goes here
             self.parent = parent
             self.las_path = las_path
             self.pt_array = pt_array
@@ -145,7 +145,7 @@ class AarcCloud():
 
 
     #--------------------general public methods----------------------------------------------------
-    def extract_pt_class(self, class_no: int) -> 'AarcCloud':
+    def extract_pt_class(self, class_no: int) -> 'HoughCloud':
         """Remove all pts except the specified classification from the point cloud instance.
 
         Args:
@@ -167,10 +167,10 @@ class AarcCloud():
         class_mask = (class_no == self.pt_class)
         cloud_name = self._get_cloud_name(class_no)
 
-        return AarcCloud(parent=self, pt_array=self.pt_array[class_mask], cld_name=cloud_name, 
+        return HoughCloud(parent=self, pt_array=self.pt_array[class_mask], cld_name=cloud_name, 
         tree_lvl=self.tree_lvl + 1, pt_class=class_no)
 
-    def cluster_in_plan(self, gap: float, density: int = 20, min_cld_pts: int = 50) -> 'list[AarcCloud]':
+    def cluster_in_plan(self, gap: float, density: int = 20, min_cld_pts: int = 50) -> 'list[HoughCloud]':
         lbls, unique_lbls = self._plan_cluster_labels(self.pt_array, gap, density)
 
         clustered_clds = []
@@ -185,7 +185,7 @@ class AarcCloud():
             if len(cluster_pts) >= min_cld_pts and self._rough_density(cluster_pts) > 0 and \
             self._get_outline_area(cluster_pts) > 0.1:
                 cluster_name = self._get_cloud_name(self.pt_class, cld_count, orientation= 'horiz')
-                cluster_cld = AarcCloud(parent= self, pt_array=cluster_pts, 
+                cluster_cld = HoughCloud(parent= self, pt_array=cluster_pts, 
                 cld_name=cluster_name, tree_lvl= self.tree_lvl + 1, pt_class=self.pt_class, 
                 cld_lvl= self.cld_lvl, below_cld_elevation= self.below_cld_elevation)
                 clustered_clds.append(cluster_cld)
@@ -202,7 +202,7 @@ class AarcCloud():
         
         return clustered_clds
 
-    def cluster_in_elevation(self, vert_resolution: float = 0.5, smooth: bool = True) -> 'list[AarcCloud]':
+    def cluster_in_elevation(self, vert_resolution: float = 0.5, smooth: bool = True) -> 'list[HoughCloud]':
         
         #number of points in each elevation bin
         bin_count, elev_bins = self._elevation_count(vert_resolution, smooth)
@@ -217,7 +217,7 @@ class AarcCloud():
         for ix, v_cluster in enumerate(flat_levels):
             cld_nm = self._get_cloud_name(self.pt_class, ix, orientation= 'vert')
             below_el = self.min_el if ix == 0 else np.min(flat_levels[ix - 1][:, 2])
-            roof_cld = AarcCloud(parent=self, pt_array=v_cluster, cld_name=cld_nm, 
+            roof_cld = HoughCloud(parent=self, pt_array=v_cluster, cld_name=cld_nm, 
             tree_lvl= self.tree_lvl + 1, pt_class=self.pt_class, cld_lvl= ix, below_cld_elevation= below_el)
 
             vertical_clusters.append(roof_cld)
